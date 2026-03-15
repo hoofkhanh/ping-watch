@@ -1,0 +1,62 @@
+services:
+  postgres:
+    container_name: ping-watch-postgresql
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    networks:
+      - ping-watch-net
+    restart: unless-stopped
+
+  pgadmin:
+    container_name: ping-watch-pgadmin
+    image: dpage/pgadmin4:9.5.0
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    volumes:
+      - pgadmin:/var/lib/pgadmin
+    ports:
+      - 85:80
+    networks:
+      - ping-watch-net
+    restart: unless-stopped
+    depends_on:
+      - postgres
+
+  ping-watch-project:
+    build: .
+    image: hoofkhanh/ping-watch-project:1.0.0
+    container_name: ping-watch-project
+    ports:
+      - 8080:8080
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION}
+      JWT_REFRESH_TOKEN_EXPIRATION: ${JWT_REFRESH_TOKEN_EXPIRATION}
+    depends_on:
+      - postgres
+      - pgadmin
+    restart: unless-stopped
+    networks:
+      - ping-watch-net
+
+networks:
+  ping-watch-net:
+    driver: bridge
+
+volumes:
+  postgres:
+  pgadmin:
