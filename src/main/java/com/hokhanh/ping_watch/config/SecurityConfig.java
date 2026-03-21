@@ -26,7 +26,7 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 // it's gonna be public for everyone to register and login
-                .requestMatchers("/user/login").permitAll()
+                .requestMatchers("/users/register", "/users/confirm-otp").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

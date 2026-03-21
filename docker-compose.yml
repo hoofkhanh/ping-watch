@@ -10,7 +10,7 @@ services:
     volumes:
       - postgres:/var/lib/postgresql/data
     ports:
-      - 5432:5432
+      - "${POSTGRES_PORT}:5432"
     networks:
       - ping-watch-net
     restart: unless-stopped
@@ -24,31 +24,73 @@ services:
     volumes:
       - pgadmin:/var/lib/pgadmin
     ports:
-      - 85:80
+      - "${PGADMIN_PORT}:80"
     networks:
       - ping-watch-net
     restart: unless-stopped
     depends_on:
       - postgres
 
+  redis:
+    image: redis:8.0.3
+    container_name: ping-watch-system-redis
+    restart: unless-stopped
+    volumes:
+      - redis_volume_data:/data
+    ports:
+      - "${REDIS_PORT}:6379"
+    networks:
+      - ping-watch-net
+
+  redis_insight:
+    image: redis/redisinsight:2.70
+    container_name: ping-watch-redis-insight
+    restart: unless-stopped
+    ports:
+      - "${REDIS_INSIGHT_PORT}:5540"
+    volumes:
+      - redis_insight_volume_data:/data
+    networks:
+      - ping-watch-net
+
+  mail-dev:
+    container_name: ping-watch-mail-dev
+    image: maildev/maildev:2.2.1
+    ports:
+      - 1080:1080
+      - "${MAIL_PORT}:1025"
+    networks:
+      - ping-watch-net
+    restart: unless-stopped
+
   ping-watch-project:
     build: .
     image: hoofkhanh/ping-watch-project:1.0.0
     container_name: ping-watch-project
     ports:
-      - 8080:8080
+      - "${PW_PORT}:8080"
     environment:
       DB_HOST: postgres
-      DB_PORT: 5432
+      DB_PORT: ${POSTGRES_PORT}
       DB_NAME: ${DB_NAME}
       DB_USERNAME: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION}
       JWT_REFRESH_TOKEN_EXPIRATION: ${JWT_REFRESH_TOKEN_EXPIRATION}
+      REDIS_HOST: redis
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_DB: ${REDIS_DB}
+      MAIL_HOST: mail-dev
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
     depends_on:
       - postgres
       - pgadmin
+      - redis
+      - redis_insight
+      - mail-dev
     restart: unless-stopped
     networks:
       - ping-watch-net
@@ -60,3 +102,5 @@ networks:
 volumes:
   postgres:
   pgadmin:
+  redis_insight_volume_data:
+  redis_volume_data:
