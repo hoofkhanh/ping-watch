@@ -53,3 +53,31 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+// Set default profile to "local" if not specified
+def profile = System.getProperty("spring.profiles.active") ?: "local"
+
+bootRun {
+    systemProperty "spring.profiles.active", profile
+}
+
+test {
+    systemProperty "spring.profiles.active", profile
+	testLogging {
+        events "passed", "failed", "skipped"
+        showStandardStreams = true
+    }
+
+    afterSuite { desc, result ->
+        if (!desc.parent) { // chỉ in summary cuối cùng
+            println "\n===================="
+            println "TEST RESULT SUMMARY"
+            println "===================="
+            println "Total: ${result.testCount}"
+            println "Passed: ${result.successfulTestCount}"
+            println "Failed: ${result.failedTestCount}"
+            println "Skipped: ${result.skippedTestCount}"
+            println "====================\n"
+        }
+    }
+}

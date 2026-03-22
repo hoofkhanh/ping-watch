@@ -8,19 +8,19 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.startsWith;
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.UUID;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hokhanh.ping_watch.constant.ErrorCode;
@@ -36,143 +36,155 @@ import com.hokhanh.ping_watch.service.impl.UserServiceImpl;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceImplTest {
+        // Mock dependencies and inject into UserServiceImpl
+        @InjectMocks
+        private UserServiceImpl userService;
 
-    @InjectMocks
-    private UserServiceImpl userService;
+        @Mock
+        private RedisService redisService;
 
-    @Mock
-    private RedisService redisService;
+        @Mock
+        private EmailService emailService;
 
-    @Mock
-    private EmailService emailService;
+        @Mock
+        private UserRepository userRepository;
 
-    @Mock
-    private UserRepository userRepository;
+        @Mock
+        private UserMapper userMapper;
 
-    @Mock
-    private UserMapper userMapper;
+        private static final String OTP = "123456";
+        private static final String FIRST_NAME = "Khanh";
+        private static final String LAST_NAME = "Ho";
+        private static final String USERNAME = "khanh123";
+        private static final String EMAIL = "khanh@gmail.com";
+        private static final String PASSWORD = "password";
 
-    private static final String OTP = "123456";
+        private RegisterRequest cachedRegister;
+        private ConfirmOtpRequest confirmOtpRequest;
 
-    @Test
-    void register_shouldSuccess_whenValidRequest() {
-        RegisterRequest request = new RegisterRequest(
-                "Khanh",
-                "Ho",
-                "khanh123",
-                "password",
-                "password",
-                "khanh@gmail.com",
-                null
-        );
+        @BeforeEach
+        void setUp() {
+                cachedRegister = new RegisterRequest(
+                                FIRST_NAME,
+                                LAST_NAME,
+                                USERNAME,
+                                PASSWORD,
+                                PASSWORD,
+                                EMAIL,
+                                OTP);
 
-        doReturn(null).when(userRepository).findByUsername("khanh123");
-        doReturn(null).when(userRepository).findByEmail("khanh@gmail.com");
+                confirmOtpRequest = new ConfirmOtpRequest(OTP, USERNAME);
+        }
 
-        doNothing().when(redisService).set(anyString(), any(), any());
-        doNothing().when(emailService).send(anyString(), anyString(), anyString());
+        @Test
+        void register_shouldSuccess_whenValidRequest() {
+                RegisterRequest registerRequest = new RegisterRequest(
+                                FIRST_NAME,
+                                LAST_NAME,
+                                USERNAME,
+                                PASSWORD,
+                                PASSWORD,
+                                EMAIL,
+                                null);
+                doReturn(null).when(userRepository).findByUsername("khanh123");
+                doReturn(null).when(userRepository).findByEmail("khanh@gmail.com");
 
-        userService.register(request);
+                doNothing().when(redisService).set(anyString(), any(), any());
+                doNothing().when(emailService).send(anyString(), anyString(), anyString());
 
-        verify(redisService, times(1))
-                .set(startsWith("username:"), any(), any());
+                userService.register(registerRequest);
 
-        verify(emailService, times(1))
-                .send(eq("khanh@gmail.com"), anyString(), contains("Your OTP is"));
-    }
+                verify(redisService, times(1))
+                                .set(startsWith("username:"), any(), any());
 
-    @Test
-    void register_shouldThrowException_whenPasswordNotMatch() {
-        RegisterRequest request = new RegisterRequest(
-                "Khanh",
-                "Ho",
-                "khanh123",
-                "password1",
-                "password2",
-                "khanh@gmail.com",
-                null
-        );
+                verify(emailService, times(1))
+                                .send(eq("khanh@gmail.com"), anyString(), contains("Your OTP is"));
+        }
 
-        IllegalArgumentException ex = assertThrows(
-                IllegalArgumentException.class,
-                () -> userService.register(request)
-        );
+        @Test
+        void register_shouldThrowException_whenPasswordNotMatch() {
+                RegisterRequest invalidRegisterRequest = new RegisterRequest(
+                                FIRST_NAME,
+                                LAST_NAME,
+                                USERNAME,
+                                PASSWORD,
+                                "differentPassword",
+                                EMAIL,
+                                null);
+                IllegalArgumentException ex = assertThrows(
+                                IllegalArgumentException.class,
+                                () -> userService.register(invalidRegisterRequest));
 
-        assertEquals(ErrorCode.PASSWORD_NOT_MATCH.name(), ex.getMessage());
-    }
+                assertEquals(ErrorCode.PASSWORD_NOT_MATCH.name(), ex.getMessage());
+        }
 
-    @Test
-    void confirmOtp_shouldSuccess_whenValidOtp() {
-        ConfirmOtpRequest request = new ConfirmOtpRequest("khanh123", OTP);
+        @Test
+        void confirmOtp_shouldSuccess_whenValidOtp() {
+                User user = new User(
+                                null,
+                                FIRST_NAME,
+                                LAST_NAME,
+                                USERNAME,
+                                PASSWORD,
+                                EMAIL);
 
-        RegisterRequest cached = new RegisterRequest(
-                "Khanh",
-                "Ho",
-                "khanh123",
-                "password",
-                "password",
-                "khanh@gmail.com",
-                OTP
-        );
+                User savedUser = new User(
+                                UUID.randomUUID(),
+                                FIRST_NAME,
+                                LAST_NAME,
+                                USERNAME,
+                                PASSWORD,
+                                EMAIL);
 
-        User user = new User();
-        RegisterResponse response = new RegisterResponse();
+                RegisterResponse response = new RegisterResponse(
+                                savedUser.getId(),
+                                savedUser.getFirstName(),
+                                savedUser.getLastName(),
+                                savedUser.getUsername(),
+                                savedUser.getEmail());
 
-        when(redisService.get(anyString(), eq(RegisterRequest.class))).thenReturn(cached);
-        doNothing().when(redisService).delete(anyString());
+                when(redisService.get(eq("username:khanh123"), eq(RegisterRequest.class)))
+                                .thenReturn(cachedRegister);
 
-        when(userRepository.findByUsername("khanh123")).thenReturn(null);
-        when(userRepository.findByEmail("khanh@gmail.com")).thenReturn(null);
+                when(userRepository.findByUsername("khanh123")).thenReturn(null);
+                when(userRepository.findByEmail("khanh@gmail.com")).thenReturn(null);
 
-        when(userMapper.toUser(cached)).thenReturn(user);
-        when(userRepository.save(user)).thenReturn(user);
-        when(userMapper.toRegisterResponse(user)).thenReturn(response);
+                doNothing().when(redisService).delete("username:khanh123");
 
-        RegisterResponse result = userService.confirmOtp(request);
+                when(userMapper.toUser(cachedRegister)).thenReturn(user);
+                when(userRepository.save(any(User.class))).thenReturn(savedUser);
+                when(userMapper.toRegisterResponse(savedUser)).thenReturn(response);
 
-        assertNotNull(result);
+                RegisterResponse result = userService.confirmOtp(confirmOtpRequest);
 
-        verify(redisService).delete(anyString());
-        verify(userRepository).save(user);
-    }
+                assertNotNull(result);
 
-    @Test
-    void confirmOtp_shouldThrow_whenOtpExpired() {
-        ConfirmOtpRequest request = new ConfirmOtpRequest("khanh123", OTP);
+                verify(redisService).delete("username:khanh123");
+                verify(userRepository).save(any(User.class));
+        }
 
-        when(redisService.get(anyString(), eq(RegisterRequest.class)))
-                .thenReturn(null);
+        @Test
+        void confirmOtp_shouldThrow_whenOtpExpired() {
+                when(redisService.get(anyString(), eq(RegisterRequest.class)))
+                                .thenReturn(null);
 
-        IllegalArgumentException ex = assertThrows(
-                IllegalArgumentException.class,
-                () -> userService.confirmOtp(request)
-        );
+                IllegalArgumentException ex = assertThrows(
+                                IllegalArgumentException.class,
+                                () -> userService.confirmOtp(confirmOtpRequest));
 
-        assertEquals(ErrorCode.OTP_EXPIRED.name(), ex.getMessage());
-    }
+                assertEquals(ErrorCode.OTP_EXPIRED.name(), ex.getMessage());
+        }
 
-    @Test
-    void confirmOtp_shouldThrow_whenOtpInvalid() {
-        ConfirmOtpRequest request = new ConfirmOtpRequest("khanh123", "wrong");
+        @Test
+        void confirmOtp_shouldThrow_whenOtpInvalid() {
+                ConfirmOtpRequest invalidOtpRequest = new ConfirmOtpRequest("654321", USERNAME);
+                when(redisService.get(anyString(), eq(RegisterRequest.class)))
+                                .thenReturn(cachedRegister);
 
-        RegisterRequest cached = new RegisterRequest(
-                "Khanh",
-                "Ho",
-                "khanh123",
-                "password",
-                "password",
-                "khanh@gmail.com",
-                OTP
-        );
+                IllegalArgumentException ex = assertThrows(
+                                IllegalArgumentException.class,
+                                () -> userService.confirmOtp(invalidOtpRequest));
 
-        when(redisService.get(anyString(), eq(RegisterRequest.class)))
-                .thenReturn(cached);
-
-        IllegalArgumentException ex = assertThrows(
-                IllegalArgumentException.class,
-                () -> userService.confirmOtp(request)
-        );
-
-        assertEquals(ErrorCode.OTP_INVALID.name(), ex.getMessage());
-    }
+                assertEquals(ErrorCode.OTP_INVALID.name(), ex.getMessage());
+        }
 }
