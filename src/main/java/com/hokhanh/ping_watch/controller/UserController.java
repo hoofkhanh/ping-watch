@@ -4,7 +4,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.hokhanh.ping_watch.model.User;
 import com.hokhanh.ping_watch.request.ConfirmOtpRequest;
+import com.hokhanh.ping_watch.request.LoginRequest;
 import com.hokhanh.ping_watch.request.RegisterRequest;
+import com.hokhanh.ping_watch.response.LoginResponse;
 import com.hokhanh.ping_watch.response.RegisterResponse;
 import com.hokhanh.ping_watch.service.UserService;
 
@@ -16,10 +18,11 @@ import lombok.extern.slf4j.Slf4j;
 import java.net.URI;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequestMapping("/users")
@@ -45,6 +48,20 @@ public class UserController {
         URI location = URI.create("/users/" + response.id());
         return ResponseEntity.created(location).body(response);
     }
-    
-    
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest request) {
+        log.info("Received login request: {}", request);
+        LoginResponse response = userService.login(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/refresh-token")
+    public ResponseEntity<String> refreshToken(
+            @RequestParam @NotBlank(message = "Username is required") String username) {
+        log.info("Received refresh token request");
+        String response = userService.refreshToken(username);
+        return ResponseEntity.ok(response);
+    }
+
 }

@@ -14,6 +14,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Duration;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -22,15 +23,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.hokhanh.ping_watch.constant.ErrorCode;
 import com.hokhanh.ping_watch.mapper.UserMapper;
 import com.hokhanh.ping_watch.model.User;
 import com.hokhanh.ping_watch.repository.UserRepository;
 import com.hokhanh.ping_watch.request.ConfirmOtpRequest;
+import com.hokhanh.ping_watch.request.LoginRequest;
 import com.hokhanh.ping_watch.request.RegisterRequest;
+import com.hokhanh.ping_watch.response.LoginResponse;
 import com.hokhanh.ping_watch.response.RegisterResponse;
 import com.hokhanh.ping_watch.service.EmailService;
+import com.hokhanh.ping_watch.service.JwtService;
 import com.hokhanh.ping_watch.service.RedisService;
 import com.hokhanh.ping_watch.service.impl.UserServiceImpl;
 
@@ -52,15 +57,20 @@ class UserServiceImplTest {
         @Mock
         private UserMapper userMapper;
 
+        @Mock
+        private JwtService jwtService;
+
         private static final String OTP = "123456";
         private static final String FIRST_NAME = "Khanh";
         private static final String LAST_NAME = "Ho";
         private static final String USERNAME = "khanh123";
         private static final String EMAIL = "khanh@gmail.com";
         private static final String PASSWORD = "password";
+        private static final long REFRESH_EXPIRATION_MS = 86400000L;
 
         private RegisterRequest cachedRegister;
         private ConfirmOtpRequest confirmOtpRequest;
+        private LoginRequest loginRequest;
 
         @BeforeEach
         void setUp() {
@@ -74,8 +84,13 @@ class UserServiceImplTest {
                                 OTP);
 
                 confirmOtpRequest = new ConfirmOtpRequest(OTP, USERNAME);
+
+                ReflectionTestUtils.setField(userService, "refreshExpiration", REFRESH_EXPIRATION_MS);
+
+                loginRequest = new LoginRequest(USERNAME, PASSWORD);
         }
 
+        // Register tests
         @Test
         void register_shouldSuccess_whenValidRequest() {
                 RegisterRequest registerRequest = new RegisterRequest(
@@ -187,4 +202,83 @@ class UserServiceImplTest {
 
                 assertEquals(ErrorCode.OTP_INVALID.name(), ex.getMessage());
         }
+
+        // Login tests
+        @Test
+        void login_shouldSuccess_whenValidCredentials() {
+                UUID userId = UUID.randomUUID();
+                User user = new User(userId, FIRST_NAME, LAST_NAME, USERNAME, PASSWORD, EMAIL);
+                String accessToken = "access-token";
+                String refreshToken = "refresh-token";
+                LoginResponse response = new LoginResponse(userId, FIRST_NAME, LAST_NAME, USERNAME, EMAIL, accessToken);
+
+                when(userRepository.findByUsername(USERNAME)).thenReturn(user);
+                when(jwtService.generateToken(userId, true)).thenReturn(accessToken);
+                when(jwtService.generateToken(userId, false)).thenReturn(refreshToken);
+                when(userMapper.toLoginResponse(user, accessToken)).thenReturn(response);
+
+                LoginResponse result = userService.login(loginRequest);
+
+                assertNotNull(result);
+                // assertEquals(response, result);
+                verify(redisService).set(
+                                eq("refreshToken:" + USERNAME),
+                                eq(refreshToken),
+                                eq(Duration.ofMillis(REFRESH_EXPIRATION_MS)));
+                verify(userMapper).toLoginResponse(user, accessToken);
+        }
+
+        @Test
+        void login_shouldThrow_whenUsernameNotFound() {
+                when(userRepository.findByUsername(USERNAME)).thenReturn(null);
+
+                IllegalArgumentException ex = assertThrows(
+                                IllegalArgumentException.class,
+                                () -> userService.login(loginRequest));
+
+                assertEquals(ErrorCode.USERNAME_NOT_FOUND.name(), ex.getMessage());
+        }
+
+        @Test
+        void login_shouldThrow_whenPasswordNotMatch() {
+                LoginRequest loginRequest = new LoginRequest(USERNAME, "wrong-password");
+                User user = new User(UUID.randomUUID(), FIRST_NAME, LAST_NAME, USERNAME, PASSWORD, EMAIL);
+                when(userRepository.findByUsername(USERNAME)).thenReturn(user);
+
+                IllegalArgumentException ex = assertThrows(
+                                IllegalArgumentException.class,
+                                () -> userService.login(loginRequest));
+
+                assertEquals(ErrorCode.PASSWORD_NOT_MATCH.name(), ex.getMessage());
+        }
+
+        // Refresh token tests
+        @Test
+        void refreshToken_shouldSuccess_whenRefreshTokenExists() {
+                UUID userId = UUID.randomUUID();
+                String cachedRefreshToken = "cached-refresh-token";
+                String newAccessToken = "new-access-token";
+
+                when(redisService.get("refreshToken:" + USERNAME, String.class)).thenReturn(cachedRefreshToken);
+                when(jwtService.extractUserId(cachedRefreshToken)).thenReturn(userId.toString());
+                when(jwtService.generateToken(userId, true)).thenReturn(newAccessToken);
+
+                String result = userService.refreshToken(USERNAME);
+
+                assertEquals(newAccessToken, result);
+                verify(jwtService).extractUserId(cachedRefreshToken);
+                verify(jwtService).generateToken(userId, true);
+        }
+
+        @Test
+        void refreshToken_shouldThrow_whenRefreshTokenExpired() {
+                when(redisService.get("refreshToken:" + USERNAME, String.class)).thenReturn(null);
+
+                IllegalArgumentException ex = assertThrows(
+                                IllegalArgumentException.class,
+                                () -> userService.refreshToken(USERNAME));
+
+                assertEquals(ErrorCode.REFRESH_TOKEN_EXPIRED.name(), ex.getMessage());
+        }
+
 }

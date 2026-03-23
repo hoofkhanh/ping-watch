@@ -20,15 +20,14 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class JwtAuthenticationFilter extends OncePerRequestFilter{
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
 
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
-            FilterChain filterChain
-    ) throws ServletException, IOException {
+            FilterChain filterChain) throws ServletException, IOException {
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
         final String userId;
@@ -47,7 +46,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
             log.info("JWT does not contain valid userId. path={}", path);
             filterChain.doFilter(request, response);
             return;
-        }   
+        }
 
         if (!jwtService.isTokenValid(jwt)) {
             log.info("Expired JWT for userId={}, path={}", userId, path);
@@ -56,31 +55,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
         }
 
         boolean isRefreshTokenType = jwtService.isRefreshTokenType(jwt);
-        if (isRefreshTokenType != path.equals("/user/refreshToken")) {
+        if (isRefreshTokenType != path.equals("/users/refresh-token")) {
             String message = isRefreshTokenType
-                ? "Refresh token used on invalid endpoint"
-                : "Access token used on refresh endpoint";
+                    ? "Refresh token used on invalid endpoint"
+                    : "Access token used on refresh endpoint";
 
             log.info(
-                "{}. userId={}, path={}, method={}, ip={}",
-                message,
-                userId,
-                path,
-                request.getMethod(),
-                request.getRemoteAddr()
-            );
+                    "{}. userId={}, path={}, method={}, ip={}",
+                    message,
+                    userId,
+                    path,
+                    request.getMethod(),
+                    request.getRemoteAddr());
 
             filterChain.doFilter(request, response);
             return;
         }
 
-        UsernamePasswordAuthenticationToken authToken =
-                new UsernamePasswordAuthenticationToken(
-                        userId,
-                        null,
-                        List.of()
-                );
-
+        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                userId,
+                null,
+                List.of());
 
         SecurityContextHolder.getContext().setAuthentication(authToken);
 
