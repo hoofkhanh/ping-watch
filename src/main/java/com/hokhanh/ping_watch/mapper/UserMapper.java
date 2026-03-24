@@ -25,8 +25,8 @@ public class UserMapper {
                 user.getEmail());
     }
 
-    public LoginResponse toLoginResponse(User user, String accessToken) {
+    public LoginResponse toLoginResponse(User user, String accessToken, String refreshToken) {
         return new LoginResponse(user.getId(), user.getFirstName(), user.getLastName(), user.getUsername(),
-                user.getEmail(), accessToken);
+                user.getEmail(), accessToken, refreshToken);
     }
 }

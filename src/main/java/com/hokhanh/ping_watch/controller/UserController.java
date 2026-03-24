@@ -2,7 +2,6 @@ package com.hokhanh.ping_watch.controller;
 
 import org.springframework.web.bind.annotation.RestController;
 
-import com.hokhanh.ping_watch.model.User;
 import com.hokhanh.ping_watch.request.ConfirmOtpRequest;
 import com.hokhanh.ping_watch.request.LoginRequest;
 import com.hokhanh.ping_watch.request.RegisterRequest;
@@ -10,6 +9,7 @@ import com.hokhanh.ping_watch.response.LoginResponse;
 import com.hokhanh.ping_watch.response.RegisterResponse;
 import com.hokhanh.ping_watch.service.UserService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -58,9 +58,11 @@ public class UserController {
 
     @GetMapping("/refresh-token")
     public ResponseEntity<String> refreshToken(
-            @RequestParam @NotBlank(message = "Username is required") String username) {
+            @RequestParam @NotBlank(message = "Username is required") String username,
+            HttpServletRequest request) {
         log.info("Received refresh token request");
-        String response = userService.refreshToken(username);
+        String refreshToken = (String) request.getAttribute("refreshToken");
+        String response = userService.refreshToken(username, refreshToken);
         return ResponseEntity.ok(response);
     }
 

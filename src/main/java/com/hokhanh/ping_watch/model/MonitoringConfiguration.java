@@ -2,8 +2,9 @@ package com.hokhanh.ping_watch.model;
 
 import java.util.UUID;
 
-
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -28,6 +29,8 @@ public class MonitoringConfiguration {
   private UUID id;
 
   private String name;
+
+  @Enumerated(EnumType.STRING)
   private HttpMethod httpMethod;
   private String url;
   private double interval; // in seconds

@@ -72,6 +72,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
+        if (isRefreshTokenType) {
+            request.setAttribute("refreshToken", jwt);
+        }
+
         UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                 userId,
                 null,

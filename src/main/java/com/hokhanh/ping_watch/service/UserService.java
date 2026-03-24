@@ -13,5 +13,5 @@ public interface UserService {
 
     LoginResponse login(LoginRequest request);
 
-    String refreshToken(String username);
+    String refreshToken(String username, String refreshToken);
 }

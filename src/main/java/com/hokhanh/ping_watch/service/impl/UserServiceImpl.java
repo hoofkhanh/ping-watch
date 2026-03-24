@@ -118,14 +118,19 @@ public class UserServiceImpl implements UserService {
         String accessToken = jwtService.generateToken(user.getId(), true);
         String refreshToken = jwtService.generateToken(user.getId(), false);
         redisService.set("refreshToken:" + request.username(), refreshToken, Duration.ofMillis(refreshExpiration));
-        return userMapper.toLoginResponse(user, accessToken);
+        return userMapper.toLoginResponse(user, accessToken, refreshToken);
     }
 
     @Override
-    public String refreshToken(String username) {
+    public String refreshToken(String username, String refreshToken) {
+        log.info("Processing refresh token for user: {}", username);
         String cachedRefreshToken = redisService.get("refreshToken:" + username, String.class);
         if (cachedRefreshToken == null) {
             throw new IllegalArgumentException(ErrorCode.REFRESH_TOKEN_EXPIRED.name());
+        }
+
+        if (refreshToken == null || !refreshToken.equals(cachedRefreshToken)) {
+            throw new IllegalArgumentException(ErrorCode.REFRESH_TOKEN_INVALID.name());
         }
 
         UUID userId = UUID.fromString(jwtService.extractUserId(cachedRefreshToken));
