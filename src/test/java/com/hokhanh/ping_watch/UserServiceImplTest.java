@@ -210,22 +210,23 @@ class UserServiceImplTest {
                 User user = new User(userId, FIRST_NAME, LAST_NAME, USERNAME, PASSWORD, EMAIL);
                 String accessToken = "access-token";
                 String refreshToken = "refresh-token";
-                LoginResponse response = new LoginResponse(userId, FIRST_NAME, LAST_NAME, USERNAME, EMAIL, accessToken);
+                LoginResponse response = new LoginResponse(userId, FIRST_NAME, LAST_NAME, USERNAME, EMAIL, accessToken,
+                                refreshToken);
 
                 when(userRepository.findByUsername(USERNAME)).thenReturn(user);
                 when(jwtService.generateToken(userId, true)).thenReturn(accessToken);
                 when(jwtService.generateToken(userId, false)).thenReturn(refreshToken);
-                when(userMapper.toLoginResponse(user, accessToken)).thenReturn(response);
+                when(userMapper.toLoginResponse(user, accessToken, refreshToken)).thenReturn(response);
 
                 LoginResponse result = userService.login(loginRequest);
 
                 assertNotNull(result);
-                // assertEquals(response, result);
+                assertEquals(response, result);
                 verify(redisService).set(
                                 eq("refreshToken:" + USERNAME),
                                 eq(refreshToken),
                                 eq(Duration.ofMillis(REFRESH_EXPIRATION_MS)));
-                verify(userMapper).toLoginResponse(user, accessToken);
+                verify(userMapper).toLoginResponse(user, accessToken, refreshToken);
         }
 
         @Test
@@ -257,13 +258,14 @@ class UserServiceImplTest {
         void refreshToken_shouldSuccess_whenRefreshTokenExists() {
                 UUID userId = UUID.randomUUID();
                 String cachedRefreshToken = "cached-refresh-token";
+                String providedRefreshToken = "cached-refresh-token";
                 String newAccessToken = "new-access-token";
 
                 when(redisService.get("refreshToken:" + USERNAME, String.class)).thenReturn(cachedRefreshToken);
                 when(jwtService.extractUserId(cachedRefreshToken)).thenReturn(userId.toString());
                 when(jwtService.generateToken(userId, true)).thenReturn(newAccessToken);
 
-                String result = userService.refreshToken(USERNAME);
+                String result = userService.refreshToken(USERNAME, providedRefreshToken);
 
                 assertEquals(newAccessToken, result);
                 verify(jwtService).extractUserId(cachedRefreshToken);
@@ -276,9 +278,23 @@ class UserServiceImplTest {
 
                 IllegalArgumentException ex = assertThrows(
                                 IllegalArgumentException.class,
-                                () -> userService.refreshToken(USERNAME));
+                                () -> userService.refreshToken(USERNAME, "any-refresh-token"));
 
                 assertEquals(ErrorCode.REFRESH_TOKEN_EXPIRED.name(), ex.getMessage());
+        }
+
+        @Test
+        void refreshToken_shouldThrow_whenRefreshTokenInvalid() {
+                String cachedRefreshToken = "cached-refresh-token";
+                String providedRefreshToken = "invalid-refresh-token";
+
+                when(redisService.get("refreshToken:" + USERNAME, String.class)).thenReturn(cachedRefreshToken);
+
+                IllegalArgumentException ex = assertThrows(
+                                IllegalArgumentException.class,
+                                () -> userService.refreshToken(USERNAME, providedRefreshToken));
+
+                assertEquals(ErrorCode.REFRESH_TOKEN_INVALID.name(), ex.getMessage());
         }
 
 }
