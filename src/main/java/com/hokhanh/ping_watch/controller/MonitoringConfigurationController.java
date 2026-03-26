@@ -24,6 +24,8 @@ import com.hokhanh.ping_watch.response.AddMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.response.DeleteMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.response.GetAllMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.response.GetMonitoringConfigurationResponse;
+import com.hokhanh.ping_watch.response.StartMonitoringConfigurationResponse;
+import com.hokhanh.ping_watch.response.StopMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.response.UpdateMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.service.MonitoringConfigurationService;
 
@@ -88,6 +90,26 @@ public class MonitoringConfigurationController {
         log.info("Received get monitoring configuration by id request with id: {}", id);
 
         GetMonitoringConfigurationResponse response = monitoringConfigurationService.getById(id, userId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{id}/start")
+    public ResponseEntity<StartMonitoringConfigurationResponse> start(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal String userId) {
+        log.info("Received start monitoring request with id: {}", id);
+
+        StartMonitoringConfigurationResponse response = monitoringConfigurationService.start(id, userId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{id}/stop")
+    public ResponseEntity<StopMonitoringConfigurationResponse> stop(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal String userId) {
+        log.info("Received stop monitoring request with id: {}", id);
+
+        StopMonitoringConfigurationResponse response = monitoringConfigurationService.stop(id, userId);
         return ResponseEntity.ok(response);
     }
 }

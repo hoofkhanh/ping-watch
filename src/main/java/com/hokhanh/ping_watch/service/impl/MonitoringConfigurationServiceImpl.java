@@ -19,8 +19,11 @@ import com.hokhanh.ping_watch.response.AddMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.response.DeleteMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.response.GetAllMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.response.GetMonitoringConfigurationResponse;
+import com.hokhanh.ping_watch.response.StartMonitoringConfigurationResponse;
+import com.hokhanh.ping_watch.response.StopMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.response.UpdateMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.service.MonitoringConfigurationService;
+import com.hokhanh.ping_watch.service.scheduler.MonitoringRunStateService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +35,7 @@ public class MonitoringConfigurationServiceImpl implements MonitoringConfigurati
     private final MonitoringConfigurationRepository monitoringConfigurationRepository;
     private final UserRepository userRepository;
     private final MonitoringConfigurationMapper monitoringConfigurationMapper;
+    private final MonitoringRunStateService monitoringRunStateService;
 
     @Override
     public AddMonitoringConfigurationResponse add(AddMonitoringConfigurationRequest request, String userId) {
@@ -66,6 +70,7 @@ public class MonitoringConfigurationServiceImpl implements MonitoringConfigurati
         MonitoringConfiguration monitoringConfiguration = getMonitoringConfigurationByIdAndUserId(id, parsedUserId);
 
         monitoringConfigurationRepository.delete(monitoringConfiguration);
+        monitoringRunStateService.stop(id);
         return new DeleteMonitoringConfigurationResponse(id, "Monitoring configuration deleted successfully");
     }
 
@@ -97,6 +102,34 @@ public class MonitoringConfigurationServiceImpl implements MonitoringConfigurati
 
         MonitoringConfiguration monitoringConfiguration = getMonitoringConfigurationByIdAndUserId(id, parsedUserId);
         return monitoringConfigurationMapper.toGetByIdResponse(monitoringConfiguration);
+    }
+
+    @Override
+    public StartMonitoringConfigurationResponse start(UUID id, String userId) {
+        UUID parsedUserId = parseUserId(userId);
+        log.info("Processing start monitoring request with id: {}, userId: {}", id, parsedUserId);
+
+        MonitoringConfiguration monitoringConfiguration = getMonitoringConfigurationByIdAndUserId(id, parsedUserId);
+        monitoringRunStateService.start(monitoringConfiguration.getId());
+
+        return new StartMonitoringConfigurationResponse(
+                monitoringConfiguration.getId(),
+                "STARTED",
+                "Monitoring scheduler started successfully");
+    }
+
+    @Override
+    public StopMonitoringConfigurationResponse stop(UUID id, String userId) {
+        UUID parsedUserId = parseUserId(userId);
+        log.info("Processing stop monitoring request with id: {}, userId: {}", id, parsedUserId);
+
+        MonitoringConfiguration monitoringConfiguration = getMonitoringConfigurationByIdAndUserId(id, parsedUserId);
+        monitoringRunStateService.stop(monitoringConfiguration.getId());
+
+        return new StopMonitoringConfigurationResponse(
+                monitoringConfiguration.getId(),
+                "STOPPED",
+                "Monitoring scheduler stopped successfully");
     }
 
     private MonitoringConfiguration getMonitoringConfigurationByIdAndUserId(UUID id, UUID userId) {

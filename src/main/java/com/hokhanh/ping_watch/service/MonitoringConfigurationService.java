@@ -9,6 +9,8 @@ import com.hokhanh.ping_watch.response.AddMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.response.DeleteMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.response.GetAllMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.response.GetMonitoringConfigurationResponse;
+import com.hokhanh.ping_watch.response.StartMonitoringConfigurationResponse;
+import com.hokhanh.ping_watch.response.StopMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.response.UpdateMonitoringConfigurationResponse;
 
 public interface MonitoringConfigurationService {
@@ -21,4 +23,8 @@ public interface MonitoringConfigurationService {
     GetAllMonitoringConfigurationResponse getAll(GetAllMonitoringConfigurationRequest request, String userId);
 
     GetMonitoringConfigurationResponse getById(UUID id, String userId);
+
+    StartMonitoringConfigurationResponse start(UUID id, String userId);
+
+    StopMonitoringConfigurationResponse stop(UUID id, String userId);
 }
