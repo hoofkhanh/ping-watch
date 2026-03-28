@@ -3,6 +3,7 @@ package com.hokhanh.ping_watch.ratelimit;
 import java.io.IOException;
 import java.util.Map;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -17,6 +18,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
 @Component
+@ConditionalOnExpression("'${app.role:all}' == 'api' || '${app.role:all}' == 'all'")
 @RequiredArgsConstructor
 public class RateLimitFilter extends OncePerRequestFilter {
     private final RateLimitRequestClassifier requestClassifier;

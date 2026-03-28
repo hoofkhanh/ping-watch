@@ -3,6 +3,7 @@ package com.hokhanh.ping_watch.controller;
 import java.net.URI;
 import java.util.UUID;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
@@ -34,6 +35,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
+@ConditionalOnExpression("'${app.role:all}' == 'api' || '${app.role:all}' == 'all'")
 @RequestMapping("/monitoring-configurations")
 @Slf4j
 @Validated

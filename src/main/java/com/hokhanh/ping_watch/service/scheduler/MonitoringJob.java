@@ -5,6 +5,7 @@ import java.util.UUID;
 
 public record MonitoringJob(
         UUID monitoringConfigurationId,
-        Instant queuedAt) {
+        Instant scheduledAt,
+        String jobKey) {
 
 }

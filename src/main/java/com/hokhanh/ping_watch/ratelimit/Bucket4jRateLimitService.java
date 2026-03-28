@@ -2,6 +2,7 @@ package com.hokhanh.ping_watch.ratelimit;
 
 import java.time.Duration;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Service;
 
 import io.github.bucket4j.Bandwidth;
@@ -13,6 +14,7 @@ import io.github.bucket4j.distributed.proxy.ProxyManager;
 import lombok.RequiredArgsConstructor;
 
 @Service
+@ConditionalOnExpression("'${app.role:all}' == 'api' || '${app.role:all}' == 'all'")
 @RequiredArgsConstructor
 public class Bucket4jRateLimitService {
     private final ProxyManager<String> proxyManager;

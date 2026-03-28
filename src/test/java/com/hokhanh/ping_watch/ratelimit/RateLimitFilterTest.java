@@ -14,8 +14,6 @@ import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 @ExtendWith(MockitoExtension.class)
 class RateLimitFilterTest {
 

@@ -1,6 +1,7 @@
 package com.hokhanh.ping_watch.config;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,6 +18,7 @@ import io.lettuce.core.codec.RedisCodec;
 import io.lettuce.core.codec.StringCodec;
 
 @Configuration
+@ConditionalOnExpression("'${app.role:all}' == 'api' || '${app.role:all}' == 'all'")
 @EnableConfigurationProperties(RateLimitProperties.class)
 public class RateLimitRedisConfiguration {
 

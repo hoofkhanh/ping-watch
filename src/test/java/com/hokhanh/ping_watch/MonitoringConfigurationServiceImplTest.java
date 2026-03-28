@@ -42,7 +42,6 @@ import com.hokhanh.ping_watch.response.StartMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.response.StopMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.response.UpdateMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.service.impl.MonitoringConfigurationServiceImpl;
-import com.hokhanh.ping_watch.service.scheduler.MonitoringRunStateService;
 
 @ExtendWith(MockitoExtension.class)
 class MonitoringConfigurationServiceImplTest {
@@ -58,9 +57,6 @@ class MonitoringConfigurationServiceImplTest {
 
         @Mock
         private MonitoringConfigurationMapper monitoringConfigurationMapper;
-
-        @Mock
-        private MonitoringRunStateService monitoringRunStateService;
 
         private UUID userId;
         private String userIdString;
@@ -201,7 +197,6 @@ class MonitoringConfigurationServiceImplTest {
                 assertNotNull(result);
                 assertEquals(configurationId, result.id());
                 verify(monitoringConfigurationRepository).delete(monitoringConfiguration);
-                verify(monitoringRunStateService).stop(configurationId);
         }
 
         @Test
@@ -215,7 +210,6 @@ class MonitoringConfigurationServiceImplTest {
 
                 assertEquals(ErrorCode.MONITORING_CONFIGURATION_NOT_FOUND.name(), ex.getMessage());
                 verify(monitoringConfigurationRepository, never()).delete(any());
-                verify(monitoringRunStateService, never()).stop(any());
         }
 
         @Test
@@ -304,7 +298,7 @@ class MonitoringConfigurationServiceImplTest {
                 assertNotNull(result);
                 assertEquals(configurationId, result.id());
                 assertEquals("STARTED", result.status());
-                verify(monitoringRunStateService, times(1)).start(configurationId);
+                verify(monitoringConfigurationRepository, times(1)).save(monitoringConfiguration);
         }
 
         @Test
@@ -318,7 +312,7 @@ class MonitoringConfigurationServiceImplTest {
                 assertNotNull(result);
                 assertEquals(configurationId, result.id());
                 assertEquals("STOPPED", result.status());
-                verify(monitoringRunStateService, times(1)).stop(configurationId);
+                verify(monitoringConfigurationRepository, times(1)).save(monitoringConfiguration);
         }
 
         @Test

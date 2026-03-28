@@ -24,6 +24,9 @@ public class MonitoringConfigurationMapper {
                 .url(request.url())
                 .interval(request.interval())
                 .timeout(request.timeout())
+                .isActive(false)
+                .nextRunAt(null)
+                .lastRunAt(null)
                 .user(user)
                 .build();
     }

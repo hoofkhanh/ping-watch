@@ -1,9 +1,10 @@
 package com.hokhanh.ping_watch.service.scheduler;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -15,40 +16,29 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
+@ConditionalOnExpression("'${app.role:all}' == 'scheduler' || '${app.role:all}' == 'all'")
 @RequiredArgsConstructor
 public class MonitoringSchedulerService {
     private final MonitoringConfigurationRepository monitoringConfigurationRepository;
-    private final MonitoringRunStateService monitoringRunStateService;
-    private final MonitoringJobQueue monitoringJobQueue;
+    private final MonitoringJobPublisher jobPublisher;
 
-    @Scheduled(fixedDelay = 1000)
+    @Scheduled(fixedDelayString = "${app.scheduler.fixed-delay-ms:15000}")
     public void scheduleMonitoringJobs() {
-        Instant now = Instant.now();
+        LocalDateTime now = LocalDateTime.now();
+        List<MonitoringConfiguration> dueConfigurations = monitoringConfigurationRepository
+                .findByIsActiveTrueAndNextRunAtLessThanEqual(now);
 
-        for (UUID monitoringConfigurationId : monitoringRunStateService.getActiveConfigurationIds()) {
-            monitoringConfigurationRepository.findById(monitoringConfigurationId)
-                    .ifPresentOrElse(
-                            monitoringConfiguration -> maybeEnqueueJob(monitoringConfiguration, now),
-                            () -> monitoringRunStateService.stop(monitoringConfigurationId));
+        for (MonitoringConfiguration configuration : dueConfigurations) {
+            String jobKey = configuration.getId() + ":" + now.toEpochSecond(ZoneOffset.UTC);
+            MonitoringJob job = new MonitoringJob(configuration.getId(), now.toInstant(ZoneOffset.UTC), jobKey);
+
+            jobPublisher.publish(job);
+
+            configuration.setLastRunAt(now);
+            configuration.setNextRunAt(now.plusSeconds((long) Math.max(1, configuration.getInterval())));
+            monitoringConfigurationRepository.save(configuration);
+
+            log.info("Published monitoring job configurationId={}, jobKey={}", configuration.getId(), jobKey);
         }
-    }
-
-    private void maybeEnqueueJob(MonitoringConfiguration monitoringConfiguration, Instant now) {
-        UUID configurationId = monitoringConfiguration.getId();
-        Instant lastQueuedAt = monitoringRunStateService.getLastQueuedAt(configurationId);
-
-        long intervalMillis = (long) (monitoringConfiguration.getInterval() * 1000);
-        if (intervalMillis <= 0) {
-            intervalMillis = 1000;
-        }
-
-        if (Duration.between(lastQueuedAt, now).toMillis() < intervalMillis) {
-            return;
-        }
-
-        monitoringJobQueue.enqueue(new MonitoringJob(configurationId, now));
-        monitoringRunStateService.markQueued(configurationId, now);
-
-        log.info("Enqueued monitoring job for configurationId={}", configurationId);
     }
 }

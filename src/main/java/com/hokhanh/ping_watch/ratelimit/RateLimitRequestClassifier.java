@@ -1,10 +1,12 @@
 package com.hokhanh.ping_watch.ratelimit;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 
 import jakarta.servlet.http.HttpServletRequest;
 
 @Component
+@ConditionalOnExpression("'${app.role:all}' == 'api' || '${app.role:all}' == 'all'")
 public class RateLimitRequestClassifier {
 
     public RateLimitPolicyGroup classify(HttpServletRequest request) {

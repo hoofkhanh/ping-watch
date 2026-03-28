@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Column;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -33,6 +34,8 @@ public class Metrics {
     private double responseTime; // in seconds
     private LocalDateTime timestamp;
     private boolean isSuccessful;
+    @Column(unique = true)
+    private String jobKey;
 
     @ManyToOne
     @JoinColumn(name = "monitoring_configuration_id", nullable = false)

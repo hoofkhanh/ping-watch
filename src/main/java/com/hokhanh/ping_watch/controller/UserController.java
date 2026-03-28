@@ -1,6 +1,7 @@
 package com.hokhanh.ping_watch.controller;
 
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 
 import com.hokhanh.ping_watch.request.ConfirmOtpRequest;
 import com.hokhanh.ping_watch.request.LoginRequest;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
+@ConditionalOnExpression("'${app.role:all}' == 'api' || '${app.role:all}' == 'all'")
 @RequestMapping("/users")
 @Slf4j
 @RequiredArgsConstructor

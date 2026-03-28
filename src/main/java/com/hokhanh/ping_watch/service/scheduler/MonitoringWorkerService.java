@@ -2,9 +2,11 @@ package com.hokhanh.ping_watch.service.scheduler;
 
 import java.time.LocalDateTime;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -20,9 +22,10 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
+@ConditionalOnExpression("'${app.role:all}' == 'worker' || '${app.role:all}' == 'all'")
 @RequiredArgsConstructor
 public class MonitoringWorkerService {
-    private final MonitoringJobQueue monitoringJobQueue;
+    private final MonitoringJobConsumer jobConsumer;
     private final MonitoringConfigurationRepository monitoringConfigurationRepository;
     private final MetricsRepository metricsRepository;
 
@@ -30,17 +33,24 @@ public class MonitoringWorkerService {
     public void consumeAndProcessJobs() {
         MonitoringJob monitoringJob;
 
-        while ((monitoringJob = monitoringJobQueue.poll()) != null) {
+        while ((monitoringJob = jobConsumer.poll()) != null) {
             processJob(monitoringJob);
         }
     }
 
     private void processJob(MonitoringJob monitoringJob) {
+        if (metricsRepository.existsByJobKey(monitoringJob.jobKey())) {
+            log.info("Skipping duplicated monitoring job with key={}", monitoringJob.jobKey());
+            return;
+        }
+
+        log.info("Consuming monitoring job with key={}", monitoringJob.jobKey());
+
         monitoringConfigurationRepository.findById(monitoringJob.monitoringConfigurationId())
-                .ifPresent(this::callApiAndStoreMetrics);
+                .ifPresent(configuration -> callApiAndStoreMetrics(configuration, monitoringJob.jobKey()));
     }
 
-    private void callApiAndStoreMetrics(MonitoringConfiguration monitoringConfiguration) {
+    private void callApiAndStoreMetrics(MonitoringConfiguration monitoringConfiguration, String jobKey) {
         long startedAt = System.nanoTime();
 
         int statusCode = 0;
@@ -72,10 +82,15 @@ public class MonitoringWorkerService {
                 .responseTime(responseTimeInSeconds)
                 .timestamp(LocalDateTime.now())
                 .isSuccessful(successful)
+                .jobKey(jobKey)
                 .monitoringConfiguration(monitoringConfiguration)
                 .build();
 
-        metricsRepository.save(metrics);
+        try {
+            metricsRepository.save(metrics);
+        } catch (DataIntegrityViolationException ex) {
+            log.info("Duplicate job key ignored: {}", jobKey);
+        }
     }
 
     private RestTemplate buildRestTemplate(double timeoutInSeconds) {

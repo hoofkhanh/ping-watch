@@ -1,7 +1,9 @@
 package com.hokhanh.ping_watch.model;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -15,6 +17,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.Builder.Default;
 
 @Data
 @NoArgsConstructor
@@ -35,6 +38,13 @@ public class MonitoringConfiguration {
   private String url;
   private double interval; // in seconds
   private double timeout; // in seconds
+
+  @Default
+  @Column(name = "is_active")
+  private boolean isActive = false;
+
+  private LocalDateTime nextRunAt;
+  private LocalDateTime lastRunAt;
 
   @ManyToOne
   @JoinColumn(name = "user_id", nullable = false)
