@@ -48,6 +48,10 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
 	
 	implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+	implementation 'com.bucket4j:bucket4j-core:8.10.1'
+	implementation 'com.bucket4j:bucket4j-redis:8.10.1'
+	implementation 'io.lettuce:lettuce-core'
 }
 
 tasks.named('test') {
