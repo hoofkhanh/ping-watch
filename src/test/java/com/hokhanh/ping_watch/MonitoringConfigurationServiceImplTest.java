@@ -305,6 +305,7 @@ class MonitoringConfigurationServiceImplTest {
 
         @Test
         void stop_shouldSuccess_whenConfigurationBelongsToUser() {
+                monitoringConfiguration.setActive(true);
                 when(monitoringConfigurationRepository.findByIdAndUser_Id(configurationId, userId))
                                 .thenReturn(Optional.of(monitoringConfiguration));
 
@@ -315,6 +316,34 @@ class MonitoringConfigurationServiceImplTest {
                 assertEquals(configurationId, result.id());
                 assertEquals("STOPPED", result.status());
                 verify(monitoringConfigurationRepository, times(1)).save(monitoringConfiguration);
+        }
+
+        @Test
+        void start_shouldThrow_whenConfigurationAlreadyStarted() {
+                monitoringConfiguration.setActive(true);
+                when(monitoringConfigurationRepository.findByIdAndUser_Id(configurationId, userId))
+                                .thenReturn(Optional.of(monitoringConfiguration));
+
+                IllegalArgumentException ex = assertThrows(
+                                IllegalArgumentException.class,
+                                () -> monitoringConfigurationService.start(configurationId, userIdString));
+
+                assertEquals(ErrorCode.MONITORING_CONFIGURATION_ALREADY_STARTED.name(), ex.getMessage());
+                verify(monitoringConfigurationRepository, never()).save(any());
+        }
+
+        @Test
+        void stop_shouldThrow_whenConfigurationAlreadyStopped() {
+                monitoringConfiguration.setActive(false);
+                when(monitoringConfigurationRepository.findByIdAndUser_Id(configurationId, userId))
+                                .thenReturn(Optional.of(monitoringConfiguration));
+
+                IllegalArgumentException ex = assertThrows(
+                                IllegalArgumentException.class,
+                                () -> monitoringConfigurationService.stop(configurationId, userIdString));
+
+                assertEquals(ErrorCode.MONITORING_CONFIGURATION_ALREADY_STOPPED.name(), ex.getMessage());
+                verify(monitoringConfigurationRepository, never()).save(any());
         }
 
         @Test

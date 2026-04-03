@@ -111,6 +111,10 @@ public class MonitoringConfigurationServiceImpl implements MonitoringConfigurati
         log.info("Processing start monitoring request with id: {}, userId: {}", id, parsedUserId);
 
         MonitoringConfiguration monitoringConfiguration = getMonitoringConfigurationByIdAndUserId(id, parsedUserId);
+        if (monitoringConfiguration.isActive()) {
+            throw new IllegalArgumentException(ErrorCode.MONITORING_CONFIGURATION_ALREADY_STARTED.name());
+        }
+
         LocalDateTime now = LocalDateTime.now();
         monitoringConfiguration.setActive(true);
         monitoringConfiguration.setLastRunAt(now);
@@ -129,6 +133,10 @@ public class MonitoringConfigurationServiceImpl implements MonitoringConfigurati
         log.info("Processing stop monitoring request with id: {}, userId: {}", id, parsedUserId);
 
         MonitoringConfiguration monitoringConfiguration = getMonitoringConfigurationByIdAndUserId(id, parsedUserId);
+        if (!monitoringConfiguration.isActive()) {
+            throw new IllegalArgumentException(ErrorCode.MONITORING_CONFIGURATION_ALREADY_STOPPED.name());
+        }
+
         monitoringConfiguration.setActive(false);
         monitoringConfiguration.setNextRunAt(null);
         monitoringConfigurationRepository.save(monitoringConfiguration);
