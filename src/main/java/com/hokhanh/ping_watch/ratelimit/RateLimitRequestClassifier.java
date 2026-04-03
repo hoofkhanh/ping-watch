@@ -28,9 +28,6 @@ public class RateLimitRequestClassifier {
             return false;
         }
 
-        return path.equals("/users/register")
-                || path.equals("/users/confirm-otp")
-                || path.equals("/users/login")
-                || path.equals("/users/refresh-token");
+        return path.startsWith("/users/");
     }
 }

@@ -16,6 +16,8 @@ import com.hokhanh.ping_watch.response.UpdateMonitoringConfigurationResponse;
 
 @Component
 public class MonitoringConfigurationMapper {
+    private static final String STATUS_STARTED = "STARTED";
+    private static final String STATUS_STOPPED = "STOPPED";
 
     public MonitoringConfiguration toEntity(AddMonitoringConfigurationRequest request, User user) {
         return MonitoringConfiguration.builder()
@@ -79,7 +81,9 @@ public class MonitoringConfigurationMapper {
                 monitoringConfiguration.getHttpMethod(),
                 monitoringConfiguration.getUrl(),
                 monitoringConfiguration.getInterval(),
-                monitoringConfiguration.getTimeout());
+                monitoringConfiguration.getTimeout(),
+                monitoringConfiguration.isActive(),
+                toStatus(monitoringConfiguration.isActive()));
     }
 
     private MonitoringConfigurationItemResponse toItemResponse(MonitoringConfiguration monitoringConfiguration) {
@@ -89,6 +93,12 @@ public class MonitoringConfigurationMapper {
                 monitoringConfiguration.getHttpMethod(),
                 monitoringConfiguration.getUrl(),
                 monitoringConfiguration.getInterval(),
-                monitoringConfiguration.getTimeout());
+                monitoringConfiguration.getTimeout(),
+                monitoringConfiguration.isActive(),
+                toStatus(monitoringConfiguration.isActive()));
+    }
+
+    private String toStatus(boolean isActive) {
+        return isActive ? STATUS_STARTED : STATUS_STOPPED;
     }
 }

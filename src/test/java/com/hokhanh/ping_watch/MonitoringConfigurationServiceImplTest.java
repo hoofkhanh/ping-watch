@@ -262,7 +262,9 @@ class MonitoringConfigurationServiceImplTest {
                                 HttpMethod.GET,
                                 "https://www.google.com",
                                 10.0,
-                                5.0);
+                                5.0,
+                                false,
+                                "STOPPED");
 
                 when(monitoringConfigurationRepository.findByIdAndUser_Id(configurationId, userId))
                                 .thenReturn(Optional.of(monitoringConfiguration));

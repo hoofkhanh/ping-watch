@@ -68,4 +68,12 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
+    // this endpoint is for testing only, it will be removed in production
+    @GetMapping("/health-check")
+    public ResponseEntity<String> healthCheck(
+            @RequestParam @NotBlank(message = "Username is required") String username,
+            HttpServletRequest request) {
+        return ResponseEntity.ok("Health check passed");
+    }
+
 }

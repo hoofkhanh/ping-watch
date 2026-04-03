@@ -10,6 +10,8 @@ public record GetMonitoringConfigurationResponse(
         HttpMethod httpMethod,
         String url,
         double interval,
-        double timeout) {
+        double timeout,
+        boolean isActive,
+        String status) {
 
 }
