@@ -2,7 +2,9 @@ package com.hokhanh.ping_watch.service.scheduler;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -18,27 +20,33 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @ConditionalOnExpression("'${app.role:all}' == 'scheduler' || '${app.role:all}' == 'all'")
 @RequiredArgsConstructor
+// this class is responsible for publishing jobs into DelayQueue after
+// restarting
+// the DelayQueue is empty so we need to push jobs to this queue to make sure
+// the monitoring process is not interrupted
 public class MonitoringSchedulerService {
     private final MonitoringConfigurationRepository monitoringConfigurationRepository;
     private final MonitoringJobPublisher jobPublisher;
 
-    @Scheduled(fixedDelayString = "${app.scheduler.fixed-delay-ms:15000}")
+    @Scheduled(fixedDelayString = "${app.scheduler.reconcile-delay-ms:60000}")
     public void scheduleMonitoringJobs() {
-        LocalDateTime now = LocalDateTime.now();
-        List<MonitoringConfiguration> dueConfigurations = monitoringConfigurationRepository
-                .findByIsActiveTrueAndNextRunAtLessThanEqual(now);
+        List<MonitoringConfiguration> activeConfigurations = monitoringConfigurationRepository.findByIsActiveTrue();
 
-        for (MonitoringConfiguration configuration : dueConfigurations) {
-            String jobKey = configuration.getId() + ":" + now.toEpochSecond(ZoneOffset.UTC);
-            MonitoringJob job = new MonitoringJob(configuration.getId(), now.toInstant(ZoneOffset.UTC), jobKey);
+        for (MonitoringConfiguration configuration : activeConfigurations) {
+            Instant runAt = configuration.getNextRunAt() == null
+                    ? Instant.now()
+                    : configuration.getNextRunAt().toInstant(ZoneOffset.UTC);
+            MonitoringJob job = new MonitoringJob(
+                    configuration.getId(),
+                    runAt,
+                    configuration.getScheduleVersion(),
+                    toJobKey(configuration.getId(), configuration.getScheduleVersion(), runAt));
 
             jobPublisher.publish(job);
-
-            configuration.setLastRunAt(now);
-            configuration.setNextRunAt(now.plusSeconds((long) Math.max(1, configuration.getInterval())));
-            monitoringConfigurationRepository.save(configuration);
-
-            log.info("Published monitoring job configurationId={}, jobKey={}", configuration.getId(), jobKey);
         }
+    }
+
+    private String toJobKey(UUID configurationId, long scheduleVersion, Instant runAt) {
+        return configurationId + ":" + scheduleVersion + ":" + runAt.getEpochSecond();
     }
 }

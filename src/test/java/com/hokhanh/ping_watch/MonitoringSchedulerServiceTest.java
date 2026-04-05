@@ -1,6 +1,5 @@
 package com.hokhanh.ping_watch;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -11,7 +10,6 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -46,18 +44,16 @@ class MonitoringSchedulerServiceTest {
                 .interval(10)
                 .timeout(3)
                 .isActive(true)
+                .scheduleVersion(1L)
                 .nextRunAt(LocalDateTime.now().minusSeconds(1))
                 .user(new User())
                 .build();
 
-        when(monitoringConfigurationRepository.findByIsActiveTrueAndNextRunAtLessThanEqual(any()))
+        when(monitoringConfigurationRepository.findByIsActiveTrue())
                 .thenReturn(List.of(configuration));
-        when(monitoringConfigurationRepository.save(any(MonitoringConfiguration.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
 
         monitoringSchedulerService.scheduleMonitoringJobs();
 
-        verify(jobPublisher, times(1)).publish(any(MonitoringJob.class));
-        verify(monitoringConfigurationRepository, times(1)).save(any(MonitoringConfiguration.class));
+        verify(jobPublisher, times(1)).publish(org.mockito.ArgumentMatchers.any(MonitoringJob.class));
     }
 }

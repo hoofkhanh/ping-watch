@@ -46,6 +46,10 @@ public class MonitoringConfiguration {
   private LocalDateTime nextRunAt;
   private LocalDateTime lastRunAt;
 
+  @Default
+  @Column(name = "schedule_version", nullable = false)
+  private long scheduleVersion = 0L;
+
   @ManyToOne
   @JoinColumn(name = "user_id", nullable = false)
   private User user;

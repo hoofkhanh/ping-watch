@@ -17,4 +17,6 @@ public interface MonitoringConfigurationRepository extends JpaRepository<Monitor
     Optional<MonitoringConfiguration> findByIdAndUser_Id(UUID id, UUID userId);
 
     List<MonitoringConfiguration> findByIsActiveTrueAndNextRunAtLessThanEqual(LocalDateTime now);
+
+    List<MonitoringConfiguration> findByIsActiveTrue();
 }

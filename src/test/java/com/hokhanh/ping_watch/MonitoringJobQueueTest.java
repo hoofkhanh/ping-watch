@@ -14,15 +14,16 @@ import com.hokhanh.ping_watch.service.scheduler.MonitoringJobQueue;
 class MonitoringJobQueueTest {
 
     @Test
-    void publishAndPoll_shouldWorkInMemory() {
+    void publishAndTake_shouldWorkInMemory() throws InterruptedException {
         MonitoringJobQueue queue = new MonitoringJobQueue();
-        MonitoringJob job = new MonitoringJob(UUID.randomUUID(), Instant.now(), "job-key");
+        MonitoringJob job = new MonitoringJob(UUID.randomUUID(), Instant.now().minusMillis(1), 1L, "job-key");
 
         queue.publish(job);
-        MonitoringJob result = queue.poll();
+        MonitoringJob result = queue.take();
 
         assertNotNull(result);
         assertEquals(job.monitoringConfigurationId(), result.monitoringConfigurationId());
+        assertEquals(job.scheduleVersion(), result.scheduleVersion());
         assertEquals(job.jobKey(), result.jobKey());
     }
 }

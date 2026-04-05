@@ -31,6 +31,7 @@ import com.hokhanh.ping_watch.model.MonitoringConfiguration;
 import com.hokhanh.ping_watch.model.User;
 import com.hokhanh.ping_watch.repository.MonitoringConfigurationRepository;
 import com.hokhanh.ping_watch.repository.UserRepository;
+import com.hokhanh.ping_watch.repository.MetricsRepository;
 import com.hokhanh.ping_watch.request.AddMonitoringConfigurationRequest;
 import com.hokhanh.ping_watch.request.GetAllMonitoringConfigurationRequest;
 import com.hokhanh.ping_watch.request.UpdateMonitoringConfigurationRequest;
@@ -42,6 +43,8 @@ import com.hokhanh.ping_watch.response.StartMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.response.StopMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.response.UpdateMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.service.impl.MonitoringConfigurationServiceImpl;
+import com.hokhanh.ping_watch.service.scheduler.MetricsStreamService;
+import com.hokhanh.ping_watch.service.scheduler.MonitoringJobPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class MonitoringConfigurationServiceImplTest {
@@ -57,6 +60,15 @@ class MonitoringConfigurationServiceImplTest {
 
         @Mock
         private MonitoringConfigurationMapper monitoringConfigurationMapper;
+
+        @Mock
+        private MetricsRepository metricsRepository;
+
+        @Mock
+        private MetricsStreamService metricsStreamService;
+
+        @Mock
+        private MonitoringJobPublisher monitoringJobPublisher;
 
         private UUID userId;
         private String userIdString;
@@ -301,6 +313,7 @@ class MonitoringConfigurationServiceImplTest {
                 assertEquals(configurationId, result.id());
                 assertEquals("STARTED", result.status());
                 verify(monitoringConfigurationRepository, times(1)).save(monitoringConfiguration);
+                verify(monitoringJobPublisher, times(1)).publish(any());
         }
 
         @Test

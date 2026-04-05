@@ -24,6 +24,7 @@ import com.hokhanh.ping_watch.request.UpdateMonitoringConfigurationRequest;
 import com.hokhanh.ping_watch.response.AddMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.response.DeleteMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.response.GetAllMonitoringConfigurationResponse;
+import com.hokhanh.ping_watch.response.GetMonitoringMetricsResponse;
 import com.hokhanh.ping_watch.response.GetMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.response.StartMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.response.StopMonitoringConfigurationResponse;
@@ -31,8 +32,12 @@ import com.hokhanh.ping_watch.response.UpdateMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.service.MonitoringConfigurationService;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
 @ConditionalOnExpression("'${app.role:all}' == 'api' || '${app.role:all}' == 'all'")
@@ -93,6 +98,26 @@ public class MonitoringConfigurationController {
 
         GetMonitoringConfigurationResponse response = monitoringConfigurationService.getById(id, userId);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}/metrics")
+    public ResponseEntity<GetMonitoringMetricsResponse> getMetrics(
+            @PathVariable UUID id,
+            @RequestParam(required = false) @Min(value = 1, message = "Limit must be greater than 0") Integer limit,
+            @AuthenticationPrincipal String userId) {
+        log.info("Received get monitoring metrics request with id: {}, limit: {}", id, limit);
+
+        GetMonitoringMetricsResponse response = monitoringConfigurationService.getMetrics(id, limit, userId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping(value = "/{id}/metrics/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamMetrics(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal String userId) {
+        log.info("Received stream monitoring metrics request with id: {}", id);
+
+        return monitoringConfigurationService.streamMetrics(id, userId);
     }
 
     @PostMapping("/{id}/start")

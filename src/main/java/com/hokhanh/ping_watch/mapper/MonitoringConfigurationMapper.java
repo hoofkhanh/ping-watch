@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
+import com.hokhanh.ping_watch.model.Metrics;
 import com.hokhanh.ping_watch.model.MonitoringConfiguration;
 import com.hokhanh.ping_watch.model.User;
 import com.hokhanh.ping_watch.request.AddMonitoringConfigurationRequest;
@@ -12,6 +13,7 @@ import com.hokhanh.ping_watch.response.AddMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.response.GetAllMonitoringConfigurationResponse;
 import com.hokhanh.ping_watch.response.GetAllMonitoringConfigurationResponse.MonitoringConfigurationItemResponse;
 import com.hokhanh.ping_watch.response.GetMonitoringConfigurationResponse;
+import com.hokhanh.ping_watch.response.MonitoringMetricItemResponse;
 import com.hokhanh.ping_watch.response.UpdateMonitoringConfigurationResponse;
 
 @Component
@@ -33,7 +35,8 @@ public class MonitoringConfigurationMapper {
                 .build();
     }
 
-    public void updateEntity(MonitoringConfiguration monitoringConfiguration, UpdateMonitoringConfigurationRequest request) {
+    public void updateEntity(MonitoringConfiguration monitoringConfiguration,
+            UpdateMonitoringConfigurationRequest request) {
         monitoringConfiguration.setName(request.name());
         monitoringConfiguration.setHttpMethod(request.httpMethod());
         monitoringConfiguration.setUrl(request.url());
@@ -61,7 +64,8 @@ public class MonitoringConfigurationMapper {
                 monitoringConfiguration.getTimeout());
     }
 
-    public GetAllMonitoringConfigurationResponse toGetAllResponse(List<MonitoringConfiguration> monitoringConfigurations,
+    public GetAllMonitoringConfigurationResponse toGetAllResponse(
+            List<MonitoringConfiguration> monitoringConfigurations,
             int page,
             int size,
             int totalPages,
@@ -84,6 +88,17 @@ public class MonitoringConfigurationMapper {
                 monitoringConfiguration.getTimeout(),
                 monitoringConfiguration.isActive(),
                 toStatus(monitoringConfiguration.isActive()));
+    }
+
+    public MonitoringMetricItemResponse toMetricItemResponse(Metrics metrics) {
+        return new MonitoringMetricItemResponse(
+                metrics.getId(),
+                metrics.getStatusCode(),
+                metrics.getStatusName(),
+                metrics.getResponseTime(),
+                metrics.getTimestamp(),
+                metrics.isSuccessful(),
+                metrics.getJobKey());
     }
 
     private MonitoringConfigurationItemResponse toItemResponse(MonitoringConfiguration monitoringConfiguration) {

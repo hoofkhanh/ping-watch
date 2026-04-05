@@ -16,7 +16,7 @@ public record UpdateMonitoringConfigurationRequest(
         @NotBlank(message = "URL is required")
         String url,
 
-        @DecimalMin(value = "0.1", message = "Interval must be greater than 0")
+        @DecimalMin(value = "3.0", message = "Interval must be greater than or equal to 3 seconds")
         double interval,
 
         @DecimalMin(value = "0.1", message = "Timeout must be greater than 0")
