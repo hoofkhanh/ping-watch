@@ -30,7 +30,7 @@ out/
 .vscode/
 
 ### env files ###
-.env
+.env*
 
 # Compiled class file
 *.class
@@ -63,4 +63,4 @@ HELP.md
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
-!**/src/test/**/build/
+!**/src/test/**/build/.env*
