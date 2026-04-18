@@ -125,12 +125,16 @@ public class MonitoringWorkerService {
                         return;
                     }
 
-                    callApiAndStoreMetrics(configuration, monitoringJob.jobKey());
-                    scheduleNext(configuration, monitoringJob.runAt());
+                    boolean successful = callApiAndStoreMetrics(configuration, monitoringJob.jobKey());
+                    if (successful) {
+                        scheduleNext(configuration, monitoringJob.runAt());
+                    } else {
+                        stopAfterFailure(configuration, monitoringJob.runAt());
+                    }
                 });
     }
 
-    private void callApiAndStoreMetrics(MonitoringConfiguration monitoringConfiguration, String jobKey) {
+    private boolean callApiAndStoreMetrics(MonitoringConfiguration monitoringConfiguration, String jobKey) {
         long startedAt = System.nanoTime();
 
         int statusCode = 0;
@@ -172,6 +176,19 @@ public class MonitoringWorkerService {
         } catch (DataIntegrityViolationException ex) {
             log.info("Duplicate job key ignored: {}", jobKey);
         }
+
+        return successful;
+    }
+
+    private void stopAfterFailure(MonitoringConfiguration monitoringConfiguration, Instant lastRunAt) {
+        monitoringConfiguration.setActive(false);
+        monitoringConfiguration.setScheduleVersion(monitoringConfiguration.getScheduleVersion() + 1);
+        monitoringConfiguration.setLastRunAt(LocalDateTime.ofInstant(lastRunAt, ZoneOffset.UTC));
+        monitoringConfiguration.setNextRunAt(null);
+        monitoringConfigurationRepository.save(monitoringConfiguration);
+
+        log.warn("Monitoring configuration auto-stopped after failed check. configurationId={}",
+                monitoringConfiguration.getId());
     }
 
     private void scheduleNext(MonitoringConfiguration monitoringConfiguration, Instant lastRunAt) {
