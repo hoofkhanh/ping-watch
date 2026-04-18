@@ -76,4 +76,17 @@ public class UserController {
         return ResponseEntity.ok("Health check passed");
     }
 
+    @GetMapping("/health-check-test")
+    public ResponseEntity<String> healthCheckTest(
+            @RequestParam @NotBlank(message = "Username is required") String username,
+            HttpServletRequest request) {
+        return ResponseEntity.ok("Health check passed");
+    }
+
+    @GetMapping("/health-check-test-2")
+    public ResponseEntity<String> healthCheckTest2(
+            @RequestParam @NotBlank(message = "Username is required") String username,
+            HttpServletRequest request) {
+        return ResponseEntity.ok("Healadasdth check passed");
+    }
 }
