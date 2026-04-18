@@ -1,6 +1,6 @@
 # Purpose
 
-This application is built to solve a common problem: **reliably monitoring deployed APIs over time without depending on a local or host machine**.
+This application is built to solve a common problem: **the lack of a reliable way to monitor deployed APIs over time without depending on a local or host machine**.
 
 In many cases, running health checks directly on the same server as the API is not reliable, as the host environment may differ from real-world conditions (network, configuration, dependencies, etc.). Similarly, using a personal machine to run checks continuously is not practical, as it requires keeping your computer running at all times.
 
